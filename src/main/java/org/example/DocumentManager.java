@@ -30,10 +30,13 @@ public class DocumentManager {
      * @return saved document
      */
     public Document save(Document document) {
-        if(document.getId().isEmpty()){
+        if (document.getId().isEmpty()) {
             String id = Integer.toString(documents.size() + 1);
             document.setId(id);
             documents.add(document);
+        } else {
+            int index = documents.indexOf(document);
+            documents.set(index, document);
         }
 
         return document;
@@ -47,48 +50,40 @@ public class DocumentManager {
      */
     public List<Document> search(SearchRequest request) {
         return documents.stream()
-                .filter(document -> matchesTitlePrefix(document, request.getTitlePrefixes()))
-                .filter(document -> matchesContainsContent(document, request.getContainsContents()))
-                .filter(document -> matchesAuthorsId(document, request.getAuthorIds()))
-                .filter(document -> matchesCreatedDate(document, request.getCreatedFrom(), request.getCreatedTo()))
+                .filter(document -> matchesTitlePrefix(document, request.getTitlePrefixes())
+                        && matchesContainsContent(document, request.getContainsContents())
+                        && matchesAuthorsId(document, request.getAuthorIds())
+                        && matchesCreatedDate(document, request.getCreatedFrom(), request.getCreatedTo()))
                 .collect(Collectors.toList());
     }
 
-    private boolean matchesTitlePrefix(Document document, List<String> titlePrefixes){
-        if(titlePrefixes.isEmpty()){
+    private boolean matchesTitlePrefix(Document document, List<String> titlePrefixes) {
+        if (titlePrefixes.isEmpty()) {
             return true;
         }
-        for(String prefix : titlePrefixes){
-            if(document.getTitle().startsWith(prefix)){
-                return true;
-            }
-        }
 
-        return false;
+        return titlePrefixes.stream()
+                .anyMatch(prefix -> document.getTitle().startsWith(prefix));
     }
 
-    private boolean matchesContainsContent(Document document, List<String> containsContents){
-        if(containsContents.isEmpty()){
+    private boolean matchesContainsContent(Document document, List<String> containsContents) {
+        if (containsContents.isEmpty()) {
             return true;
         }
-        for(String content : containsContents){
-            if(document.getContent().contains(content)){
-                return true;
-            }
-        }
 
-        return false;
+        return containsContents.stream()
+                .anyMatch(content -> document.getContent().contains(content));
     }
 
-    private boolean matchesAuthorsId(Document document, List<String> authorIds){
-        if(authorIds.isEmpty()){
+    private boolean matchesAuthorsId(Document document, List<String> authorIds) {
+        if (authorIds.isEmpty()) {
             return true;
         }
 
         return authorIds.contains(document.getAuthor().getId());
     }
 
-    private boolean matchesCreatedDate(Document document, Instant createdFrom, Instant createdTo){
+    private boolean matchesCreatedDate(Document document, Instant createdFrom, Instant createdTo) {
         Instant created = document.getCreated();
         return created.isBefore(createdTo) && created.isAfter(createdFrom);
     }
